@@ -75,27 +75,25 @@ class DecimalEncoder(json.JSONEncoder):
         return super(DecimalEncoder, self).default(o)
 
 
-response = dynamodbResponse()
-resultDict = defaultdict(list)
-jobCounter = 0
-for i in response['Items']:
-    jobCounter = jobCounter + 1
-    dictRecord = json.dumps(i, cls=DecimalEncoder)
-    jsonOutput = json.loads(dictRecord)
-    resultDict[jsonOutput['JobID']].append(json.dumps(i, cls=DecimalEncoder))
-
-
-LewisChore = getRandomChore(resultDict,jobCounter, "Lewis")
-RebeccaChore = getRandomChore(resultDict,jobCounter, "Rebecca")
-JacobChore = getRandomChore(resultDict,jobCounter, "Jacob")
-IzzyChore = getRandomChore(resultDict,jobCounter, "Isabelle")
-
-LewisMsg = "Lewis, You will " + LewisChore["JobName"] + ". "
-BexMsg = "Rebecca, You will " + RebeccaChore["JobName"] + ". "
-JacobMsg = "Jacob, You will " + JacobChore["JobName"] + ". "
-IzzyMsg = "Izzy, You will " + IzzyChore["JobName"] + "."
-
-SayThis = LewisMsg + BexMsg + JacobMsg + IzzyMsg
+def getChores():
+    response = dynamodbResponse()
+    resultDict = defaultdict(list)
+    jobCounter = 0
+    for i in response['Items']:
+        jobCounter = jobCounter + 1
+        dictRecord = json.dumps(i, cls=DecimalEncoder)
+        jsonOutput = json.loads(dictRecord)
+        resultDict[jsonOutput['JobID']].append(json.dumps(i, cls=DecimalEncoder))
+    LewisChore = getRandomChore(resultDict,jobCounter, "Lewis")
+    RebeccaChore = getRandomChore(resultDict,jobCounter, "Rebecca")
+    JacobChore = getRandomChore(resultDict,jobCounter, "Jacob")
+    IzzyChore = getRandomChore(resultDict,jobCounter, "Isabelle")
+    LewisMsg = "Lewis, You will " + LewisChore["JobName"] + ". "
+    BexMsg = "Rebecca, You will " + RebeccaChore["JobName"] + ". "
+    JacobMsg = "Jacob, You will " + JacobChore["JobName"] + ". "
+    IzzyMsg = "Izzy, You will " + IzzyChore["JobName"] + "."
+    SayThis = LewisMsg + BexMsg + JacobMsg + IzzyMsg
+    return SayThis
 
 
 # =========================================================================================================================================
@@ -113,16 +111,16 @@ class GetNewFactHandler(AbstractRequestHandler):
     def can_handle(self, handler_input):
         # type: (HandlerInput) -> bool
         return (is_request_type("LaunchRequest")(handler_input) or
-                is_intent_name("GetNewSpaceFactIntent")(handler_input))
+                is_intent_name("get_jobs_for_all")(handler_input))
 
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
         logger.info("In GetNewFactHandler")
 
-
+        SayThis = getChores()
         speech = GET_FACT_MESSAGE + SayThis
 
-        handler_input.response_builder.speak(speech).set_card(
+        handler_input.response_builder.speak(speech).set_should_end_session(True).set_card(
             SimpleCard(SKILL_NAME, SayThis))
         return handler_input.response_builder.response
 
